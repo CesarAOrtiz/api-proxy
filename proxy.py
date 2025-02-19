@@ -46,7 +46,7 @@ async def proxy(url: str = Query(..., title="URL objetivo", description="La URL 
         }
 
         # Hacer la solicitud con la nueva IP
-        response = requests.get(url, proxies=proxies, timeout=10)
+        response = requests.get(url, proxies=proxies, timeout=None)
 
         # Crear una respuesta idéntica a la del servidor de origen
         return Response(content=response.content, status_code=response.status_code, headers=dict(response.headers))
