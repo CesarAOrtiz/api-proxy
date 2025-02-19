@@ -1,0 +1,13 @@
+SocksPort 9050
+ControlPort 9051
+CookieAuthentication 1
+NewCircuitPeriod 10
+MaxCircuitDirtiness 20
+
+SocksPort 9052
+ControlPort 9053
+CookieAuthentication 1
+
+SocksPort 9054
+ControlPort 9055
+CookieAuthentication 1
