@@ -1,2 +1,4 @@
 forward-socks5t / 127.0.0.1:9050 .
+forward-socks5t / 127.0.0.1:9052 .
+forward-socks5t / 127.0.0.1:9054 .
 listen-address  0.0.0.0:8118
