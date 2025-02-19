@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Response, Query
+from fastapi import FastAPI, Request
 import requests
 import random
 import time
 from stem import Signal
 from stem.control import Controller
 from concurrent.futures import ThreadPoolExecutor
+from fastapi.responses import Response
 
 app = FastAPI()
 
@@ -28,9 +29,13 @@ def renew_tor_ip(control_port):
         time.sleep(3)  # Esperar para que la nueva IP se aplique
 
 
-@app.get("/proxy")
-async def proxy(url: str = Query(..., title="URL objetivo", description="La URL a la que se hará la solicitud")):
+@app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy(request: Request, full_path: str):
     try:
+        # Construir la URL completa de destino
+        target_url = f"http://{full_path}" if not full_path.startswith(
+            "http") else full_path
+
         # Seleccionar una instancia de Tor aleatoriamente
         tor_instance = random.choice(TOR_PROXIES)
         proxy_url = tor_instance["socks"]
@@ -45,14 +50,33 @@ async def proxy(url: str = Query(..., title="URL objetivo", description="La URL 
             "https": proxy_url,
         }
 
-        # Hacer la solicitud con la nueva IP
-        response = requests.get(url, proxies=proxies, timeout=None)
+        # Preparar los headers originales
+        headers = dict(request.headers)
 
-        # Crear una respuesta idéntica a la del servidor de origen
-        return Response(content=response.content, status_code=response.status_code, headers=dict(response.headers))
+        # Preparar el body de la solicitud (para POST, PUT, etc.)
+        body = await request.body()
+
+        # Hacer la solicitud con el método original
+        response = requests.request(
+            method=request.method,
+            url=target_url,
+            headers=headers,
+            data=body if request.method in ["POST", "PUT", "PATCH"] else None,
+            params=request.query_params,
+            cookies=request.cookies,
+            proxies=proxies,
+            timeout=30
+        )
+
+        # Devolver la respuesta exactamente como la del servidor original
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            headers=dict(response.headers)
+        )
 
     except requests.exceptions.RequestException as e:
-        return Response(content=f"Error al acceder a {url}: {str(e)}", status_code=500)
+        return Response(content=f"Error al acceder a {target_url}: {str(e)}", status_code=500)
 
 
 @app.get("/")
