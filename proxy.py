@@ -19,11 +19,14 @@ TOR_PROXIES = [
 executor = ThreadPoolExecutor(max_workers=len(TOR_PROXIES))
 
 # Función para cambiar la IP sin bloquear otras solicitudes
+
+
 def renew_tor_ip(control_port):
     with Controller.from_port(port=control_port) as controller:
         controller.authenticate()
         controller.signal(Signal.NEWNYM)
         time.sleep(3)  # Esperar para que la nueva IP se aplique
+
 
 @app.get("/proxy")
 async def proxy(url: str = Query(..., title="URL objetivo", description="La URL a la que se hará la solicitud")):
@@ -50,6 +53,7 @@ async def proxy(url: str = Query(..., title="URL objetivo", description="La URL 
 
     except requests.exceptions.RequestException as e:
         return Response(content=f"Error al acceder a {url}: {str(e)}", status_code=500)
+
 
 @app.get("/")
 async def root():
