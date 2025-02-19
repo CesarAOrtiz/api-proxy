@@ -11,9 +11,7 @@ app = FastAPI()
 
 # Lista de instancias de Tor con diferentes puertos
 TOR_PROXIES = [
-    {"socks": "socks5h://127.0.0.1:9050", "control": 9051},
-    {"socks": "socks5h://127.0.0.1:9052", "control": 9053},
-    {"socks": "socks5h://127.0.0.1:9054", "control": 9055},
+    {"http": "http://127.0.0.1:8118", "https": "http://127.0.0.1:8118"},
 ]
 
 # ThreadPool para manejar cambios de IP sin bloquear solicitudes
@@ -22,8 +20,8 @@ executor = ThreadPoolExecutor(max_workers=len(TOR_PROXIES))
 # Función para cambiar la IP sin bloquear otras solicitudes
 
 
-def renew_tor_ip(control_port):
-    with Controller.from_port(port=control_port) as controller:
+def renew_tor_ip():
+    with Controller.from_port(port=9051) as controller:
         controller.authenticate()
         controller.signal(Signal.NEWNYM)
         time.sleep(3)  # Esperar para que la nueva IP se aplique
@@ -36,22 +34,16 @@ async def proxy(request: Request, full_path: str):
         target_url = f"http://{full_path}" if not full_path.startswith(
             "http") else full_path
 
-        # Seleccionar una instancia de Tor aleatoriamente
-        tor_instance = random.choice(TOR_PROXIES)
-        proxy_url = tor_instance["socks"]
-        control_port = tor_instance["control"]
+        # Usar Privoxy como proxy HTTP y HTTPS
+        proxies = random.choice(TOR_PROXIES)
 
         # Renovar la IP en segundo plano
-        executor.submit(renew_tor_ip, control_port)
+        executor.submit(renew_tor_ip)
 
-        # Configurar el proxy SOCKS5 de Tor
-        proxies = {
-            "http": proxy_url,
-            "https": proxy_url,
-        }
-
-        # Preparar los headers originales
+        # Preparar los headers originales y asegurarse de incluir el `Host`
         headers = dict(request.headers)
+        headers["Host"] = target_url.replace(
+            "https://", "").replace("http://", "").split("/")[0]
 
         # Preparar el body de la solicitud (para POST, PUT, etc.)
         body = await request.body()
