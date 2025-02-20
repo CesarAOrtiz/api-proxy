@@ -1,4 +1,4 @@
 SocksPort 9050
-NewCircuitPeriod 10
-MaxCircuitDirtiness 20
+ControlPort 9051
+CookieAuthentication 0
 Log notice stdout

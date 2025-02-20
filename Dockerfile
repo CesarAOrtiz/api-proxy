@@ -1,15 +1,24 @@
-# Imagen base con Python
+# Imagen base con Node.js y Tor
 FROM debian:latest
 
-# Instalar Tor y dependencias necesarias
-RUN apt update && apt install -y tor privoxy && rm -rf /var/lib/apt/lists/*
+# Instalar dependencias necesarias
+RUN apt update && apt install -y \
+    nodejs npm tor netcat curl && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copiar configuración de Tor
+# Copiar archivos de configuración de Tor
 COPY torrc /etc/tor/torrc
-COPY privoxy_config /etc/privoxy/config
 
-# Exponer el puerto del API
-EXPOSE 8118
+# Instalar dependencias de Node.js
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install
 
-# Iniciar Tor y Privoxy
-CMD tor & privoxy --no-daemon /etc/privoxy/config
+# Copiar el código del servidor proxy
+COPY index.js ./
+
+# Exponer el puerto del proxy
+EXPOSE 8080
+
+# Iniciar Tor y luego el proxy en Node.js
+CMD tor & node index.js
