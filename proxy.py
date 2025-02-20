@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, Response
 import httpx
 from stem import Signal
 from stem.control import Controller
-from urllib.parse import urlparse,
+from urllib.parse import urlparse
 
 app = FastAPI()
 
