@@ -56,8 +56,8 @@ async def proxy(request: Request, full_path: str):
         # Capturar el body de la solicitud (si existe)
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None
 
-        # Hacer la solicitud al servidor de destino con HTTPX usando SOCKS5 de Tor
-        async with client.stream(
+        # 🔥 Hacer la solicitud al servidor de destino usando `await client.request(...)`
+        response = await client.request(
             method=request.method,
             url=target_url,
             headers=headers,
@@ -65,26 +65,25 @@ async def proxy(request: Request, full_path: str):
             params=request.query_params,
             cookies=request.cookies,
             timeout=30
-        ) as response:
-            print(f"✅ Respuesta recibida con código {response.status_code}")
+        )
 
-            # Obtener el `content-type` original
-            content_type = response.headers.get("content-type", "text/plain")
+        print(f"✅ Respuesta recibida con código {response.status_code}")
 
-            # Preparar los headers de la respuesta eliminando los que pueden causar errores
-            response_headers = {
-                key: value
-                for key, value in response.headers.items()
-            }
+        # Obtener el `content-type` original
+        content_type = response.headers.get("content-type", "text/plain")
 
-            # Retornar la respuesta descomprimida **exactamente como la devuelve el servidor original**
-            return Response(
-                # 🔥 Contenido descomprimido (JSON, HTML, imágenes, archivos, etc.)
-                content=(await response.aread()).decode(response.encoding or "utf-8"),
-                status_code=response.status_code,
-                headers=response_headers,
-                media_type=content_type  # 🔥 Respetar el content-type original
-            )
+        # Preparar los headers de la respuesta eliminando los que pueden causar errores
+        response_headers = {
+            key: value for key, value in response.headers.items()
+        }
+
+        # Retornar la respuesta **exactamente como la devuelve el servidor original**
+        return Response(
+            content=response.content,  # 🔥 Enviar contenido sin modificar
+            status_code=response.status_code,
+            headers=response_headers,
+            media_type=content_type  # 🔥 Respetar el content-type original
+        )
 
     except httpx.RequestError as e:
         print(f"❌ Error en la solicitud a {target_url}: {e}")
