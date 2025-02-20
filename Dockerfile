@@ -3,7 +3,7 @@ FROM debian:latest
 
 # Instalar dependencias necesarias
 RUN apt update && apt install -y \
-    nodejs npm tor netcat curl && \
+    nodejs npm tor netcat-openbsd curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Copiar archivos de configuración de Tor
