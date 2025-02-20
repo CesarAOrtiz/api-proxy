@@ -3,7 +3,7 @@ FROM debian:latest
 
 # Instalar NGINX, Squid, Tor y Privoxy
 RUN apt update && apt install -y \
-    nginx squid tor privoxy curl netcat && \
+    nginx squid tor privoxy curl netcat-openbsd && \
     rm -rf /var/lib/apt/lists/*
 
 # Copiar configuraciones personalizadas
