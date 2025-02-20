@@ -1,24 +1,17 @@
-# Imagen base con Node.js y Tor
-FROM debian:latest
+FROM node:14
 
-# Instalar dependencias necesarias
-RUN apt update && apt install -y \
-    nodejs npm tor curl && \
-    rm -rf /var/lib/apt/lists/*
+# Instalar Tor
+RUN apt-get update && apt-get install -y tor
 
-# Copiar archivos de configuración de Tor
-COPY torrc /etc/tor/torrc
+# Copiar los archivos de la aplicación
+COPY . /app
+WORKDIR /app
 
 # Instalar dependencias de Node.js
-WORKDIR /app
-COPY package.json package-lock.json ./
 RUN npm install
 
-# Copiar el código del servidor proxy
-COPY index.js ./
+# Exponer el puerto
+EXPOSE 3000
 
-# Exponer el puerto del proxy
-EXPOSE 8080
-
-# Iniciar Tor y luego el proxy en Node.js
-CMD tor & sleep 5 && node index.js
+# Iniciar Tor y luego la aplicación
+CMD service tor start && node index.js

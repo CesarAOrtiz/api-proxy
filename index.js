@@ -1,40 +1,37 @@
 const http = require("http");
 const httpProxy = require("http-proxy");
-const { SocksProxyAgent } = require("socks-proxy-agent");
-const net = require("net");
+const tr = require("tor-request");
 
-const TOR_SOCKS_PROXY = "socks5h://127.0.0.1:9050";
+// Crear un proxy HTTP
+const proxy = httpProxy.createProxyServer({});
 
-const proxy = httpProxy.createProxyServer({
-  agent: new SocksProxyAgent(TOR_SOCKS_PROXY), // Redirige tráfico HTTP a SOCKS5
-  changeOrigin: true,
-});
-
-// Función para cambiar la IP de Tor dinámicamente
-function changeTorIP() {
-  const socket = net.connect(9051, "127.0.0.1", () => {
-    socket.write('AUTHENTICATE ""\r\nSIGNAL NEWNYM\r\nQUIT\r\n');
-    socket.end();
-    console.log("🔄 IP de Tor cambiada");
-  });
-}
-
-// Cambia la IP cada 5 minutos automáticamente
-setInterval(changeTorIP, 300000);
-
-// Servidor HTTP Proxy
+// Configurar el servidor HTTP
 const server = http.createServer((req, res) => {
-  console.log(`🔗 Redirigiendo tráfico a través de Tor`);
+  // Extraer la URL de la solicitud
+  const targetUrl = req.url.slice(1); // Elimina la barra inicial (/) de la URL
 
-  proxy.web(req, res, {}, (err) => {
-    console.error("❌ Error en el proxy", err);
-    res.writeHead(500);
-    res.end("Error en el proxy");
+  if (!targetUrl) {
+    res.statusCode = 400;
+    return res.end("Por favor, proporciona una URL válida.");
+  }
+
+  // Enrutar la solicitud a través de Tor
+  tr.request(targetUrl, (err, torRes, body) => {
+    if (err) {
+      res.statusCode = 500;
+      return res.end(
+        `Error al realizar la solicitud a través de Tor: ${err.message}`
+      );
+    }
+
+    // Enviar la respuesta al cliente
+    res.statusCode = torRes.statusCode;
+    res.setHeader("Content-Type", torRes.headers["content-type"]);
+    res.end(body);
   });
 });
 
-// Escuchar en el puerto 8080
-const PORT = process.env.PORT;
-server.listen(PORT, () => {
-  console.log(`🚀 Proxy con Tor corriendo en http://localhost:${PORT}`);
+// Iniciar el servidor en el puerto 3000
+server.listen(3000, () => {
+  console.log("Proxy server con Tor corriendo en http://localhost:3000");
 });
