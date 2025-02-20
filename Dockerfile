@@ -14,4 +14,4 @@ COPY squid.conf /etc/squid/squid.conf
 EXPOSE 8080
 
 # Iniciar Squid y NGINX en segundo plano
-CMD service squid start && nginx -g "daemon off;"
+CMD service squid restart && nginx -g "daemon off;"
