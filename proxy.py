@@ -67,41 +67,27 @@ async def proxy(request: Request, full_path: str):
             timeout=30
         )
 
-        return response
+        print(f"🔄 Redirigiendo {request.method} a {target_url}")
 
-        # print(f"🔄 Redirigiendo {request.method} a {target_url}")
+        print(f"✅ Respuesta recibida con código {response.status_code}")
 
-        # print(f"✅ Respuesta recibida con código {response.status_code}")
+        # Obtener el `content-type` original
+        content_type = response.headers.get("content-type", "text/plain")
 
-        # # Obtener el `content-type` original
-        # content_type = response.headers.get("content-type", "text/plain")
-
-        # # Preparar los headers de la respuesta eliminando los que pueden causar errores
-        # response_headers = {
-        #     key: value for key, value in response.headers.items()
-        # }
-
-        # # Retornar la respuesta **exactamente como la devuelve el servidor original**
-        # return Response(
-        #     content=response.content,  # 🔥 Enviar contenido sin modificar
-        #     status_code=response.status_code,
-        #     headers=response.headers,
-        #     media_type=content_type  # 🔥 Respetar el content-type original
-        # )
+        # Retornar la respuesta **exactamente como la devuelve el servidor original**
+        return Response(
+            content=response.content.decode(content_type.split(
+                ";")[0]) if content_type else response.content,
+            status_code=response.status_code,
+            headers=response.headers,
+            media_type=content_type
+        )
 
     except httpx.RequestError as e:
         print(f"❌ Error en la solicitud a {target_url}: {e}")
         return Response(content=f"Error al acceder a {target_url}: {str(e)}",
                         status_code=500,
                         media_type="text/plain")
-
-
-@app.api_route("/redirect/{target_url:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def proxy_redirect(target_url: str):
-    """ Proxy que responde con un `307 Redirect` a un proxy diferente """
-    proxy = TOR_SOCKS_PROXY
-    redirect_url = f"{proxy}/{target_url}"
-    return Response(status_code=307, headers={"Location": redirect_url})
 
 # @app.api_route("/tunnel/{full_path:path}", methods=["CONNECT"])
 # async def tunnel_proxy(request: Request, full_path: str):
