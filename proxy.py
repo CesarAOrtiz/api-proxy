@@ -9,10 +9,11 @@ app = FastAPI()
 
 # Proxy de Privoxy conectado a una única instancia de Tor
 PRIVOXY_PROXY = "http://127.0.0.1:8118"
+TOR_SOCKS_PROXY = "socks5h://127.0.0.1:9050"
 
 # Cliente HTTPX con Privoxy como proxy
 client = httpx.AsyncClient(
-    proxy=PRIVOXY_PROXY,
+    proxy=TOR_SOCKS_PROXY,
     follow_redirects=True
 )
 
@@ -70,9 +71,8 @@ async def proxy(request: Request, full_path: str):
                 "POST", "PUT", "PATCH"] else None,
             params=request.query_params,
             cookies=request.cookies,
-            timeout=30
+            # timeout=30
         ) as response:
-            # Retornar la respuesta en streaming
             return StreamingResponse(response.aiter_raw(), status_code=response.status_code, headers=dict(response.headers))
 
     except httpx.RequestError as e:
