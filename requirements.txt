@@ -1,4 +1,0 @@
-fastapi
-httpx[socks]
-stem
-uvicorn

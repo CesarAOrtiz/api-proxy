@@ -3,3 +3,4 @@ ControlPort 9051
 CookieAuthentication 1
 NewCircuitPeriod 10
 MaxCircuitDirtiness 20
+Log notice stdout
