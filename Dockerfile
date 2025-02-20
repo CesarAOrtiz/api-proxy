@@ -1,17 +1,17 @@
-FROM node:14
+# Usa Debian como base
+FROM debian:latest
 
-# Instalar Tor
-RUN apt-get update && apt-get install -y tor
+# Instalar NGINX y Squid
+RUN apt update && apt install -y \
+    nginx squid && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copiar los archivos de la aplicación
-COPY . /app
-WORKDIR /app
+# Copiar configuraciones personalizadas
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY squid.conf /etc/squid/squid.conf
 
-# Instalar dependencias de Node.js
-RUN npm install
+# Exponer el puerto de NGINX
+EXPOSE 8080
 
-# Exponer el puerto
-EXPOSE 3000
-
-# Iniciar Tor y luego la aplicación
-CMD tor & sleep 10 && node index.js
+# Iniciar Squid y NGINX en segundo plano
+CMD service squid start && nginx -g "daemon off;"
