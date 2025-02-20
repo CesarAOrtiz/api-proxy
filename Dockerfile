@@ -21,4 +21,4 @@ COPY index.js ./
 EXPOSE 8080
 
 # Iniciar Tor y luego el proxy en Node.js
-CMD tor & node index.js
+CMD tor & sleep 5 && node index.js
