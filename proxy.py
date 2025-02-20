@@ -51,9 +51,10 @@ async def proxy(request: Request, full_path: str):
 
         headers = {key: value for key,
                    value in request.headers.items() if key.lower() != "host"}
+
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None
 
-        response = client.request(
+        async with client.stream(
             method=request.method,
             url=target_url,
             headers=headers,
@@ -61,16 +62,23 @@ async def proxy(request: Request, full_path: str):
             params=request.query_params,
             cookies=request.cookies,
             timeout=30
-        )
-        print(f"✅ Respuesta recibida con código {response.status_code}")
+        ) as response:
+            print(f"✅ Respuesta recibida con código {response.status_code}")
 
-        return Response(
-            content=response.content,
-            status_code=response.status_code,
-            headers={key: value for key, value in response.headers.items() if key.lower(
-                # 🔥 Evita problemas con gzip y chunked
-            ) not in ["content-encoding", "transfer-encoding"]}
-        )
+            # Preparar los headers de la respuesta eliminando los que pueden causar errores
+            response_headers = {
+                key: value
+                for key, value in response.headers.items()
+                if key.lower() not in ["content-encoding", "transfer-encoding"]
+            }
+
+            # Retornar la respuesta **exactamente como la devuelve el servidor original**
+            return Response(
+                # 🔥 Contenido sin modificar (JSON, HTML, imágenes, archivos, etc.)
+                content=await response.aread(),
+                status_code=response.status_code,
+                headers=response_headers
+            )
 
     except httpx.RequestError as e:
         print(f"❌ Error en la solicitud a {target_url}: {e}")
