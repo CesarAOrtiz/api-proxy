@@ -49,11 +49,16 @@ async def proxy(request: Request, full_path: str):
 
         renew_tor_ip()
 
-        headers = {key: value for key,
-                   value in request.headers.items() if key.lower() != "host"}
+        headers = {
+            key: value for key, value in request.headers.items() if key.lower() != "host"
+        }
+        # Asegurar que la solicitud acepta respuestas comprimidas
+        headers["Accept-Encoding"] = "gzip, deflate"
 
+        # Capturar el body de la solicitud (si existe)
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None
 
+        # Hacer la solicitud al servidor de destino con HTTPX usando SOCKS5 de Tor
         async with client.stream(
             method=request.method,
             url=target_url,
@@ -65,6 +70,9 @@ async def proxy(request: Request, full_path: str):
         ) as response:
             print(f"✅ Respuesta recibida con código {response.status_code}")
 
+            # Obtener el `content-type` original
+            content_type = response.headers.get("content-type", "text/plain")
+
             # Preparar los headers de la respuesta eliminando los que pueden causar errores
             response_headers = {
                 key: value
@@ -72,12 +80,13 @@ async def proxy(request: Request, full_path: str):
                 if key.lower() not in ["content-encoding", "transfer-encoding"]
             }
 
-            # Retornar la respuesta **exactamente como la devuelve el servidor original**
+            # Retornar la respuesta descomprimida **exactamente como la devuelve el servidor original**
             return Response(
-                # 🔥 Contenido sin modificar (JSON, HTML, imágenes, archivos, etc.)
+                # 🔥 Contenido descomprimido (JSON, HTML, imágenes, archivos, etc.)
                 content=await response.aread(),
                 status_code=response.status_code,
-                headers=response_headers
+                headers=response_headers,
+                media_type=content_type  # 🔥 Respetar el content-type original
             )
 
     except httpx.RequestError as e:
