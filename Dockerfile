@@ -14,4 +14,4 @@ RUN npm install
 EXPOSE 3000
 
 # Iniciar Tor y luego la aplicación
-CMD service tor start && node index.js
+CMD tor & sleep 10 && node index.js
