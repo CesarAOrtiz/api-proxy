@@ -80,7 +80,7 @@ async def proxy(request: Request, full_path: str):
             # Retornar la respuesta descomprimida **exactamente como la devuelve el servidor original**
             return Response(
                 # 🔥 Contenido descomprimido (JSON, HTML, imágenes, archivos, etc.)
-                content=(await response.aread()).decode(),
+                content=(await response.aread()).decode(response.encoding or "utf-8"),
                 status_code=response.status_code,
                 headers=response_headers,
                 media_type=content_type  # 🔥 Respetar el content-type original
