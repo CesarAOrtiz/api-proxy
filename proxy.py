@@ -52,8 +52,6 @@ async def proxy(request: Request, full_path: str):
         headers = {
             key: value for key, value in request.headers.items() if key.lower() != "host"
         }
-        # Asegurar que la solicitud acepta respuestas comprimidas
-        headers["Accept-Encoding"] = "gzip, deflate"
 
         # Capturar el body de la solicitud (si existe)
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None
@@ -77,13 +75,12 @@ async def proxy(request: Request, full_path: str):
             response_headers = {
                 key: value
                 for key, value in response.headers.items()
-                if key.lower() not in ["transfer-encoding"]
             }
 
             # Retornar la respuesta descomprimida **exactamente como la devuelve el servidor original**
             return Response(
                 # 🔥 Contenido descomprimido (JSON, HTML, imágenes, archivos, etc.)
-                content=await response.aread(),
+                content=(await response.aread()).decode(),
                 status_code=response.status_code,
                 headers=response_headers,
                 media_type=content_type  # 🔥 Respetar el content-type original
