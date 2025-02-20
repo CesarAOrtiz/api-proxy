@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, Request, Response
 import httpx
 from stem import Signal
@@ -89,25 +90,26 @@ async def proxy(request: Request, full_path: str):
                         status_code=500,
                         media_type="text/plain")
 
-# @app.api_route("/tunnel/{full_path:path}", methods=["CONNECT"])
-# async def tunnel_proxy(request: Request, full_path: str):
-#     """ Proxy que crea un túnel TCP entre el cliente y la API de destino """
-#     target_host, target_port = full_path.split(":")
-#     reader, writer = await asyncio.open_connection(target_host, int(target_port))
 
-#     # Enviar respuesta 200 OK al cliente
-#     client_writer = request.scope["client"][1]
-#     client_writer.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-#     await client_writer.drain()
+@app.api_route("/tunnel/{full_path:path}", methods=["CONNECT"])
+async def tunnel_proxy(request: Request, full_path: str):
+    """ Proxy que crea un túnel TCP entre el cliente y la API de destino """
+    target_host, target_port = full_path.split(":")
+    reader, writer = await asyncio.open_connection(target_host, int(target_port))
 
-#     # Transferir datos entre cliente y servidor
-#     async def forward(reader, writer):
-#         while not reader.at_eof():
-#             data = await reader.read(4096)
-#             if not data:
-#                 break
-#             writer.write(data)
-#             await writer.drain()
+    # Enviar respuesta 200 OK al cliente
+    client_writer = request.scope["client"][1]
+    client_writer.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+    await client_writer.drain()
 
-#     await asyncio.gather(forward(request.stream(), writer), forward(reader, client_writer))
-#     return Response(status_code=200)
+    # Transferir datos entre cliente y servidor
+    async def forward(reader, writer):
+        while not reader.at_eof():
+            data = await reader.read(4096)
+            if not data:
+                break
+            writer.write(data)
+            await writer.drain()
+
+    await asyncio.gather(forward(request.stream(), writer), forward(reader, client_writer))
+    return Response(status_code=200)

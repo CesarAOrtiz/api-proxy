@@ -1,4 +1,5 @@
+asyncio
 fastapi
-uvicorn
 httpx[socks]
 stem
+uvicorn
