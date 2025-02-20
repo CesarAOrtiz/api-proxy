@@ -67,26 +67,61 @@ async def proxy(request: Request, full_path: str):
             timeout=30
         )
 
-        print(f"✅ Respuesta recibida con código {response.status_code}")
+        return response
 
-        # Obtener el `content-type` original
-        content_type = response.headers.get("content-type", "text/plain")
+        # print(f"🔄 Redirigiendo {request.method} a {target_url}")
 
-        # Preparar los headers de la respuesta eliminando los que pueden causar errores
-        response_headers = {
-            key: value for key, value in response.headers.items()
-        }
+        # print(f"✅ Respuesta recibida con código {response.status_code}")
 
-        # Retornar la respuesta **exactamente como la devuelve el servidor original**
-        return Response(
-            content=response.content,  # 🔥 Enviar contenido sin modificar
-            status_code=response.status_code,
-            headers=response_headers,
-            media_type=content_type  # 🔥 Respetar el content-type original
-        )
+        # # Obtener el `content-type` original
+        # content_type = response.headers.get("content-type", "text/plain")
+
+        # # Preparar los headers de la respuesta eliminando los que pueden causar errores
+        # response_headers = {
+        #     key: value for key, value in response.headers.items()
+        # }
+
+        # # Retornar la respuesta **exactamente como la devuelve el servidor original**
+        # return Response(
+        #     content=response.content,  # 🔥 Enviar contenido sin modificar
+        #     status_code=response.status_code,
+        #     headers=response.headers,
+        #     media_type=content_type  # 🔥 Respetar el content-type original
+        # )
 
     except httpx.RequestError as e:
         print(f"❌ Error en la solicitud a {target_url}: {e}")
         return Response(content=f"Error al acceder a {target_url}: {str(e)}",
                         status_code=500,
                         media_type="text/plain")
+
+
+@app.api_route("/redirect/{target_url:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def proxy_redirect(target_url: str):
+    """ Proxy que responde con un `307 Redirect` a un proxy diferente """
+    proxy = TOR_SOCKS_PROXY
+    redirect_url = f"{proxy}/{target_url}"
+    return Response(status_code=307, headers={"Location": redirect_url})
+
+# @app.api_route("/tunnel/{full_path:path}", methods=["CONNECT"])
+# async def tunnel_proxy(request: Request, full_path: str):
+#     """ Proxy que crea un túnel TCP entre el cliente y la API de destino """
+#     target_host, target_port = full_path.split(":")
+#     reader, writer = await asyncio.open_connection(target_host, int(target_port))
+
+#     # Enviar respuesta 200 OK al cliente
+#     client_writer = request.scope["client"][1]
+#     client_writer.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+#     await client_writer.drain()
+
+#     # Transferir datos entre cliente y servidor
+#     async def forward(reader, writer):
+#         while not reader.at_eof():
+#             data = await reader.read(4096)
+#             if not data:
+#                 break
+#             writer.write(data)
+#             await writer.drain()
+
+#     await asyncio.gather(forward(request.stream(), writer), forward(reader, client_writer))
+#     return Response(status_code=200)
