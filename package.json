@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "http-proxy": "^1.18.1",
-    "net": "^1.0.2"
+    "net": "^1.0.2",
+    "socks-proxy-agent": "^8.0.5"
   }
 }
