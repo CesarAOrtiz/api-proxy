@@ -54,9 +54,9 @@ async def proxy(request: Request, full_path: str):
         # Cambiar la IP de Tor antes de cada solicitud
         renew_tor_ip()
 
-        # Copiar headers originales del cliente
-        headers = dict(request.headers)
-        headers["Host"] = urlparse(target_url).netloc
+        # Copiar headers originales SIN modificar el "Host"
+        headers = {key: value for key,
+                   value in request.headers.items() if key.lower() != "host"}
 
         # Capturar el body de la solicitud
         body = await request.body()
@@ -65,7 +65,7 @@ async def proxy(request: Request, full_path: str):
         async with client.stream(
             method=request.method,
             url=target_url,
-            headers=headers,
+            headers=headers,  # ✅ Se usa headers sin "Host"
             content=body if request.method in [
                 "POST", "PUT", "PATCH"] else None,
             params=request.query_params,
