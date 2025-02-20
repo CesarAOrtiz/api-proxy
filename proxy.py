@@ -1,4 +1,3 @@
-import asyncio
 from fastapi import FastAPI, Request, Response
 import httpx
 from stem import Signal
@@ -54,10 +53,8 @@ async def proxy(request: Request, full_path: str):
             key: value for key, value in request.headers.items() if key.lower() != "host"
         }
 
-        # Capturar el body de la solicitud (si existe)
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None
 
-        # 🔥 Hacer la solicitud al servidor de destino usando `await client.request(...)`
         response = await client.request(
             method=request.method,
             url=target_url,
@@ -72,16 +69,14 @@ async def proxy(request: Request, full_path: str):
 
         print(f"✅ Respuesta recibida con código {response.status_code}")
 
-        # Obtener el `content-type` original
         content_type = response.headers.get("content-type", "text/plain")
 
-        # Retornar la respuesta **exactamente como la devuelve el servidor original**
         return Response(
             content=response.content.decode(content_type.split(
                 ";")[0]) if content_type else response.content,
             status_code=response.status_code,
             headers=response.headers,
-            media_type=content_type
+            media_type=content_type,
         )
 
     except httpx.RequestError as e:
@@ -89,27 +84,3 @@ async def proxy(request: Request, full_path: str):
         return Response(content=f"Error al acceder a {target_url}: {str(e)}",
                         status_code=500,
                         media_type="text/plain")
-
-
-@app.api_route("/tunnel/{full_path:path}", methods=["CONNECT"])
-async def tunnel_proxy(request: Request, full_path: str):
-    """ Proxy que crea un túnel TCP entre el cliente y la API de destino """
-    target_host, target_port = full_path.split(":")
-    reader, writer = await asyncio.open_connection(target_host, int(target_port))
-
-    # Enviar respuesta 200 OK al cliente
-    client_writer = request.scope["client"][1]
-    client_writer.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-    await client_writer.drain()
-
-    # Transferir datos entre cliente y servidor
-    async def forward(reader, writer):
-        while not reader.at_eof():
-            data = await reader.read(4096)
-            if not data:
-                break
-            writer.write(data)
-            await writer.drain()
-
-    await asyncio.gather(forward(request.stream(), writer), forward(reader, client_writer))
-    return Response(status_code=200)
