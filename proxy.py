@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 import httpx
 from stem import Signal
 from stem.control import Controller
 from fastapi.responses import StreamingResponse
+from urllib.parse import urlparse, urlunparse
 
 app = FastAPI()
 
@@ -26,21 +27,36 @@ def renew_tor_ip():
         print(f"Error al cambiar la IP en Tor: {e}")
 
 
-@app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+def format_url(full_path: str) -> str:
+    """ Asegura que la URL tiene el esquema (http:// o https://) """
+    parsed_url = urlparse(full_path)
+
+    # Si la URL no tiene esquema, agregar "https://" por defecto
+    if not parsed_url.scheme:
+        full_path = "https://" + full_path  # Se usa HTTPS como predeterminado
+
+    return full_path
+
+
+@app.get("/")
+async def root():
+    """ Página de bienvenida cuando el usuario accede a `/` """
+    return {"message": "Proxy API running 🚀. Use /proxy/<your_url> to make requests."}
+
+
+@app.api_route("/proxy/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
 async def proxy(request: Request, full_path: str):
     """ Proxy que reenvía peticiones a través de Tor. """
     try:
-        # Construir la URL de destino
-        target_url = f"http://{full_path}" if not full_path.startswith(
-            "http") else full_path
+        # Validar y corregir la URL
+        target_url = format_url(full_path)
 
         # Cambiar la IP de Tor antes de cada solicitud
         renew_tor_ip()
 
         # Copiar headers originales del cliente
         headers = dict(request.headers)
-        headers["Host"] = target_url.replace(
-            "https://", "").replace("http://", "").split("/")[0]
+        headers["Host"] = urlparse(target_url).netloc
 
         # Capturar el body de la solicitud
         body = await request.body()
@@ -61,9 +77,3 @@ async def proxy(request: Request, full_path: str):
 
     except httpx.RequestError as e:
         return StreamingResponse(iter([f"Error al acceder a {target_url}: {str(e)}".encode()]), status_code=500)
-
-
-@app.get("/")
-async def root():
-    """ Mensaje de bienvenida """
-    return {"message": "Proxy API running 🚀. Use /<your_url> to make requests."}
