@@ -12,6 +12,9 @@ COPY privoxy.config /etc/privoxy/config
 COPY torrc /etc/tor/torrc
 COPY check_ip.sh /check_ip.sh
 
+# Dar permisos de ejecución al script de validación
+RUN chmod +x /check_ip.sh
+
 # Exponer el puerto del proxy Squid
 EXPOSE 3128
 
