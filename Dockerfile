@@ -14,6 +14,13 @@ COPY torrc /etc/tor/torrc
 # Exponer el puerto del proxy Squid
 EXPOSE 3128
 
-# Iniciar Tor, Privoxy y Squid, luego ejecutar el script de validación
-CMD service tor restart && service privoxy restart && service squid restart && tail -f /dev/null
+# Iniciar Tor, Privoxy y Squid, luego mantener el contenedor en ejecución
+CMD service tor restart && \
+    while ! nc -z 127.0.0.1 9050; do echo "⏳ Esperando Tor..."; sleep 2; done && \
+    service privoxy restart && \
+    service squid restart && \
+    squid -N
+
+
+
 
