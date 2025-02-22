@@ -15,11 +15,11 @@ COPY torrc /etc/tor/torrc
 EXPOSE 3128
 
 # Iniciar Tor, Privoxy y Squid, luego mantener el contenedor en ejecución
+# squid -N para que no se ejecute en segundo plano y se pueda ver el log
 CMD service tor restart && \
-    while ! nc -z 127.0.0.1 9050; do echo "⏳ Esperando Tor..."; sleep 2; done && \
     service privoxy restart && \
-    service squid stop && \
-    squid -N
+    service squid restart && \
+    tail -f /dev/null
 
 
 
