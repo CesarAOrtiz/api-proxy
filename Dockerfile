@@ -18,7 +18,7 @@ EXPOSE 3128
 CMD service tor restart && \
     while ! nc -z 127.0.0.1 9050; do echo "⏳ Esperando Tor..."; sleep 2; done && \
     service privoxy restart && \
-    service squid restart && \
+    service squid stop && \
     squid -N
 
 
