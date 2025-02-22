@@ -1,5 +1,3 @@
-# proxy-server
-
 # 🔥 Proxy HTTP con Rotación de IPs usando Squid + Privoxy + Tor
 
 Este proyecto es un **proxy HTTP** basado en **Squid, Privoxy y Tor**, diseñado para ofrecer **anonimato** y **rotación automática de IPs**.
