@@ -1,7 +1,8 @@
 #!/bin/bash
 
+echo "🔍 Iniciando validación de IPs de Tor..."
 while true; do
-    echo -e 'AUTHENTICATE ""\r\nSIGNAL NEWNYM\r\nQUIT\r\n' | nc 127.0.0.1 9051
-    echo "🔄 IP de Tor cambiada"
-    sleep 10
+    IP=$(curl --socks5-hostname 127.0.0.1:9050 -s http://check.torproject.org/api/ip | jq -r .IP)
+    echo "🌐 Nueva IP de Tor: $IP"
+    sleep 30
 done
