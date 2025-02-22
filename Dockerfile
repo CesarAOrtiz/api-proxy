@@ -3,7 +3,7 @@ FROM debian:latest
 
 # Instalar Squid, Tor, Privoxy, netcat y jq para JSON
 RUN apt update && apt install -y \
-    squid tor privoxy netcat-openbsd && \
+    squid tor privoxy && \
     rm -rf /var/lib/apt/lists/*
 
 # Copiar configuraciones personalizadas
